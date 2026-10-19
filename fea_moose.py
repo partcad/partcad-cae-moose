@@ -6,9 +6,12 @@
 """`pc cae fea`, by MOOSE: a linear static stress analysis of one part.
 
 `fix:` holds the faces its ports cover still in every direction; `load:` spreads
-its force evenly over the faces its ports cover, along -Z, which is where a
-weight goes; gravity acts on the part's own mass too, unless `self_weight` is
-off. MOOSE's solid mechanics module solves it, small strain, on quadratic
+its force evenly over the faces its ports cover: along the direction the part
+states, a load written as `[x, y, z]` in its own frame, and along -Z, where a
+weight goes, for a load written as a magnitude. Gravity acts on the part's own
+mass too: the `gravity:` the part states, in its own frame -- what a simulation
+found it under, `g - a` -- or 9.81 m/s^2 along -Z unless `self_weight` is off.
+MOOSE's solid mechanics module solves it, small strain, on quadratic
 tetrahedra with quadratic displacements.
 """
 
@@ -71,17 +74,26 @@ def _analyse(path, request):
 
 def _input(request, fixed, loaded, loaded_records, order):
     density = float(request.get("density", 7850))
-    gravity = 9.81 if request.get("self_weight", True) else 0.0
+    gravity = _gravity_of(request)
     family = "SECOND" if order == 2 else "FIRST"
     held = "\n".join(
         "  [hold_%s]\n    type = DirichletBC\n    variable = disp_%s\n    value = 0\n    boundary = %s\n  []"
         % (axis, axis, moose.names(fixed))
         for axis in "xyz"
     )
+    # A force on the port, spread over the area it covers: a traction, so a
+    # finer mesh does not load the part harder -- one condition per direction it
+    # has a component along.
     pulled = "\n".join(
-        "  [pull_%s]\n    type = NeumannBC\n    variable = disp_z\n    value = %.10g\n    boundary = '%s'\n  []"
-        % (name, -float(record["load"]) / (float(record["area"]) * moose.M2_PER_MM2), name)
+        "  [pull_%s_%s]\n    type = NeumannBC\n    variable = disp_%s\n    value = %.10g\n    boundary = '%s'\n  []"
+        % (name, axis, axis, value / (float(record["area"]) * moose.M2_PER_MM2), name)
         for name, record in zip(loaded, loaded_records)
+        for axis, value in zip("xyz", _force_of(record))
+        if value != 0.0
+    )
+    weight = "\n".join(
+        "  [weight_%s]\n    type = Gravity\n    variable = disp_%s\n    value = %.10g\n  []" % (axis, axis, value)
+        for axis, value in zip("xyz", gravity)
     )
     return """
 [Mesh]
@@ -115,11 +127,7 @@ def _input(request, fixed, loaded, loaded_records, order):
   []
 []
 [Kernels]
-  [weight]
-    type = Gravity
-    variable = disp_z
-    value = %(gravity).10g
-  []
+%(weight)s
 []
 [AuxVariables]
   [moved]
@@ -195,7 +203,7 @@ def _input(request, fixed, loaded, loaded_records, order):
 []
 """ % {
         "family": family,
-        "gravity": -gravity,
+        "weight": weight,
         "held": held,
         "pulled": pulled,
         "youngs": float(request.get("youngs_modulus", 2.1e11)),
@@ -203,6 +211,26 @@ def _input(request, fixed, loaded, loaded_records, order):
         "density": density,
         "direct": moose.DIRECT,
     }
+
+
+def _force_of(record):
+    """The force on one loaded port, newtons in the part's frame: as stated, or its magnitude straight down."""
+    force = record.get("force")
+    if isinstance(force, (list, tuple)) and len(force) == 3:
+        return [float(component) for component in force]
+    return [0.0, 0.0, -float(record["load"])]
+
+
+def _gravity_of(request):
+    """The acceleration of free fall the part is weighed under, m/s^2 in its own frame.
+
+    The part's own `gravity:` where it stated one -- a gravity of nought weighs
+    nothing -- and otherwise 9.81 m/s^2 along -Z, unless `self_weight` is off.
+    """
+    stated = request.get("gravity")
+    if isinstance(stated, (list, tuple)) and len(stated) == 3:
+        return [float(component) for component in stated]
+    return [0.0, 0.0, -9.81 if request.get("self_weight", True) else 0.0]
 
 
 def _verdict(peak_stress, peak_displacement, request):

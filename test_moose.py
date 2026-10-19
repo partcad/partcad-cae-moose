@@ -15,6 +15,7 @@ sandbox helpers the scripts import; see `conftest.py`).
 """
 
 import math
+import os
 
 import pytest
 
@@ -53,7 +54,37 @@ def test_a_load_is_a_traction_along_minus_z():
     assert "value = -1000000" in text
     assert "boundary = 'fix0'" in text
     assert "order = SECOND" in text
-    assert "value = -0" in text  # no gravity
+    # No gravity: every component of it nought.
+    assert "[weight_z]\n    type = Gravity\n    variable = disp_z\n    value = 0\n" in text
+
+
+def test_a_load_with_a_direction_is_a_traction_along_it():
+    text = fea_moose._input(
+        {"self_weight": False},
+        {"fix0": [1]},
+        {"load0": [2]},
+        [{"load": 5.0, "force": [3.0, 0.0, -4.0], "area": 1.0}],
+        2,
+    )
+    # 3 N and -4 N over 1 mm^2; nothing along Y, so no condition on it.
+    assert "[pull_load0_x]\n    type = NeumannBC\n    variable = disp_x\n    value = 3000000\n" in text
+    assert "[pull_load0_z]\n    type = NeumannBC\n    variable = disp_z\n    value = -4000000\n" in text
+    assert "pull_load0_y" not in text
+
+
+def test_the_part_is_weighed_under_the_gravity_it_states():
+    text = fea_moose._input({"gravity": [0.0, -8.0, -6.0]}, {"fix0": [1]}, {}, [], 2)
+    assert "variable = disp_y\n    value = -8\n" in text and "variable = disp_z\n    value = -6\n" in text
+    text = fea_moose._input({}, {"fix0": [1]}, {}, [], 2)
+    assert "variable = disp_z\n    value = -9.81\n" in text
+
+
+def test_the_fea_file_type_says_it_reads_a_direction_and_a_gravity():
+    import yaml
+
+    with open(os.path.join(os.path.dirname(__file__), "partcad.yaml"), encoding="utf-8") as f:
+        declared = yaml.safe_load(f)["cae"]["fea"]
+    assert sorted(declared["reads"]) == ["force", "gravity"]
 
 
 def test_the_modal_problem_tags_the_mass_for_the_eigen_side():
