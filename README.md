@@ -22,7 +22,7 @@ on.
 
 | analysis | section keys | MOOSE |
 | --- | --- | --- |
-| `fea` | `fix:`, `load:` | the solid mechanics module, small strain; `DirichletBC` on every displacement; `NeumannBC` along -Z, the force over the faces' area; `Gravity` for the part's own weight |
+| `fea` | `fix:`, `load:`, `gravity:` | the solid mechanics module, small strain; `DirichletBC` on every displacement; `NeumannBC`, the force over the faces' area, along the direction the part states (`[x, y, z]` in its frame) or along -Z for a magnitude; `Gravity` for the part's own weight, under the `gravity:` it states or 9.81 m/s² along -Z |
 | `dynamic` | `fix:` | the same stiffness, the mass tagged for the eigen side, `Eigenvalue` with SLEPc shift-and-invert for the lowest `modes` |
 | `thermal` | `temperature:`, `heat:`, `convection:` | `HeatConduction`; `DirichletBC` (C); `NeumannBC`, the power over the faces' area; `ConvectiveFluxFunction` against `ambient_temperature`. Every other surface is insulated |
 | `cfd` | `load:`, `outlet:`, `fix:` | the Navier-Stokes module, finite elements with PSPG and SUPG; an inlet held at its force over its area, an outlet at the reference pressure, every other surface a no-slip wall |
