@@ -66,7 +66,7 @@ cae:
     max_displacement: 1.0
 
     # Whether the part's own weight acts on it too: 9.81 m/s^2 along -Z, unless
-    # the part states 'gravity:' in its 'fea:', which replaces this.
+    # the part states 'gravity:' in its 'fea:' scenario, which replaces this.
     self_weight: true
 
   dynamic:
