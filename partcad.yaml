@@ -5,7 +5,7 @@
 # means. What makes these analyses is the section they are declared in: `cae:`.
 # Each writes binary glTF, the result being a 3D field the Digital Thread turns
 # and zooms, and answers with `findings` beside it: an empty list is a pass, and
-# is what `pc test` requires.
+# is what `pc qual test` requires.
 #
 # MOOSE is a framework for coupled physics, and these four are the simplest
 # things it does: solid mechanics static and modal, heat conduction, and
