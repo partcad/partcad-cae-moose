@@ -183,3 +183,30 @@ def test_the_cantilever_warms_as_a_rod(tmp_path):
     assert result["success"], result.get("exception")
     hottest = float(result["warnings"][0].split(" C to ")[1].split(" C")[0])
     assert hottest == pytest.approx(40.0, rel=1e-3)
+
+
+# What the colours stand for
+
+
+def test_the_allowable_is_the_yield_strength_over_the_safety_factor():
+    assert fea_moose._allowable({"yield_strength": 3.0e8, "safety_factor": 2.0}) == pytest.approx(1.5e8)
+    assert fea_moose._allowable({}) == pytest.approx(2.5e8 / 1.5)
+
+
+def test_by_default_the_colours_run_to_the_runs_own_peak():
+    """The picture this implementation has always drawn."""
+    assert fea_moose._top({"yield_strength": 5.0e7}) is None
+    assert fea_moose._top({"yield_strength": 5.0e7, "scale_to_allowable": "false"}) is None
+
+
+@pytest.mark.parametrize("flag", [True, "true", "yes", 1])
+def test_scaled_to_the_allowable_the_top_of_the_ramp_is_the_allowable(flag):
+    request = {"yield_strength": 5.0e7, "safety_factor": 1.25, "scale_to_allowable": flag}
+    assert fea_moose._top(request) == pytest.approx(4.0e7)
+
+
+def test_the_scale_is_declared_off_so_the_picture_does_not_change_under_anyone():
+    import yaml
+
+    config = yaml.safe_load(open(os.path.join(os.path.dirname(__file__), "partcad.yaml")))
+    assert config["cae"]["fea"]["scale_to_allowable"] is False

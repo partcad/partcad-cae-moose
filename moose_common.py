@@ -137,14 +137,14 @@ def at_mesh(mesh, rows, *columns):
     return [tuple(rows[k][column] for column in columns) if k is not None else None for k in at]
 
 
-def draw(path, mesh, values, low=None):
+def draw(path, mesh, values, low=None, high=None):
     """The part's surface coloured by one value per gmsh node, as glTF."""
     index = {int(tag): k for k, tag in enumerate(mesh.node_tags)}
     cells = []
     for _type, _tags, nodes in mesh.volumes:
         cells.extend([index[int(tag)] for tag in element[:4]] for element in nodes)
     numbers = [0.0 if value is None else float(value) for value in values]
-    support.write_glb(path, mesh.coordinates, support.outer_triangles(cells, 4), numbers, low=low)
+    support.write_glb(path, mesh.coordinates, support.outer_triangles(cells, 4), numbers, low=low, high=high)
 
 
 def nothing_covered(record):

@@ -55,6 +55,10 @@ cae:
 
     # The material, when the package says nothing else: steel. Pascals, and
     # kg/m^3. Note the signed exponents: YAML 1.1 reads `2.1e11` as a string.
+    # A part whose `material` names one PartCAD can resolve is analysed as
+    # that material instead: PartCAD hands this script the material's
+    # `youngsModulus`, `poissonsRatio`, `yieldStrength` and `density` for each
+    # of these that neither the package, the part nor the run re-tunes.
     youngs_modulus: 2.1e+11
     poissons_ratio: 0.30
     yield_strength: 2.5e+8
@@ -64,6 +68,15 @@ cae:
     # `safety_factor`, and a displacement past `max_displacement` (mm).
     safety_factor: 1.5
     max_displacement: 1.0
+
+    # What the colours of the model stand for. Off, blue is no stress and red
+    # is this run's own peak, whatever that is: the picture that shows where a
+    # part is loaded, and the one this implementation has always drawn. On,
+    # red is the allowable stress -- `yield_strength` over `safety_factor`,
+    # the material's when the part names one -- and anything past it stays
+    # red: a stronger material makes the same part look cooler, a part close
+    # to failing looks it, and two runs read on one scale.
+    scale_to_allowable: false
 
     # Whether the part's own weight acts on it too: 9.81 m/s^2 along -Z, unless
     # the part states 'gravity:' in its 'fea:', which replaces this.
@@ -93,6 +106,8 @@ cae:
     mesh_order: 2
     # W/(m*K) -- steel -- and the temperature (Celsius) `convection:` cools
     # towards.
+    # A part whose `material` states a `thermalConductivity` is solved with
+    # that instead, unless the package, the part or the run re-tunes it.
     conductivity: 50.0
     ambient_temperature: 20.0
     # A part hotter than this anywhere (Celsius) is a finding. Unset by default.
@@ -110,6 +125,11 @@ cae:
     # Linear elements: PSPG and SUPG stabilize equal-order velocity and pressure.
     mesh_size: 0.05
     # The fluid: air at 20 degrees. kg/m^3, and the dynamic viscosity in Pa*s.
+    # A part made of a fluid -- a material that states a `viscosity`, such as
+    # //pub/std/manufacturing/material/fluid:water -- is solved as that fluid
+    # instead: PartCAD hands this script its `density` and `viscosity`. A part
+    # made of anything else hands a fluid analysis nothing, since the part is
+    # meshed as the fluid in it and its own density is not that fluid's.
     density: 1.204
     viscosity: 1.82e-5
     # How many Newton iterations the steady state may take.
