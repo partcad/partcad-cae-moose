@@ -56,9 +56,11 @@ cae:
     # The material, when the package says nothing else: steel. Pascals, and
     # kg/m^3. Note the signed exponents: YAML 1.1 reads `2.1e11` as a string.
     # A part whose `material` names one PartCAD can resolve is analysed as
-    # that material instead: PartCAD hands this script the material's
-    # `youngsModulus`, `poissonsRatio`, `yieldStrength` and `density` for each
-    # of these that neither the package, the part nor the run re-tunes.
+    # that material instead: PartCAD 0.10.14 and later hand this script the
+    # material's `youngsModulus`, `poissonsRatio`, `yieldStrength` and
+    # `density` for each of these that neither the package, the part nor the
+    # run re-tunes. An older PartCAD hands over only what is stated, so there a
+    # part of anything but steel needs its numbers in a `cae:` section.
     youngs_modulus: 2.1e+11
     poissons_ratio: 0.30
     yield_strength: 2.5e+8
@@ -106,8 +108,10 @@ cae:
     mesh_order: 2
     # W/(m*K) -- steel -- and the temperature (Celsius) `convection:` cools
     # towards.
-    # A part whose `material` states a `thermalConductivity` is solved with
-    # that instead, unless the package, the part or the run re-tunes it.
+    # A part made of a solid whose `material` states a `thermalConductivity`
+    # is solved with that instead, unless the package, the part or the run
+    # re-tunes it -- from the PartCAD release that carries partcad/partcad#952;
+    # with an older one, state `conductivity` here. A fluid fills nothing here.
     conductivity: 50.0
     ambient_temperature: 20.0
     # A part hotter than this anywhere (Celsius) is a finding. Unset by default.
@@ -129,7 +133,10 @@ cae:
     # //pub/std/manufacturing/material/fluid:water -- is solved as that fluid
     # instead: PartCAD hands this script its `density` and `viscosity`. A part
     # made of anything else hands a fluid analysis nothing, since the part is
-    # meshed as the fluid in it and its own density is not that fluid's.
+    # meshed as the fluid in it and its own density is not that fluid's. That
+    # is the PartCAD release that carries partcad/partcad#952; 0.10.14 up to it
+    # hands over the `density` of whatever the part is made of, solid or not,
+    # so there state `density` in the part's `cae:` section.
     density: 1.204
     viscosity: 1.82e-5
     # How many Newton iterations the steady state may take.
